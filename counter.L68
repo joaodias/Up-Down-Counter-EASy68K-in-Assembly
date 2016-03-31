@@ -1,0 +1,227 @@
+00001000 Starting Address
+Assembler used: EASy68K Editor/Assembler v5.15.02
+Created On: 16/12/2014 17:57:12
+
+00000000                             1  
+00000000                             2  * Delay for hundredths of a second in param 1
+00000000                             3  DELAY    MACRO
+00000000                             4      move.b  #23,d0          trap task 23
+00000000                             5      move.l  #\1,d1          delay amount
+00000000                             6      trap    #15
+00000000                             7      ENDM
+00000000                             8  
+00000000                             9  
+00000000                            10  *-------------------------- PROGRAM START ---------------------------
+00001000                            11      ORG    $1000
+00001000                            12  
+00001000                            13  START
+00001000                            14      * initialize
+00001000  4279 000011C4             15      clr.w   last_count
+00001006  103C 0020                 16      move.b  #32,d0          trap task to get address of hardware
+0000100A  123C 0000                 17      move.b  #0,d1
+0000100E  4E4F                      18      trap    #15             display hardware window
+00001010  123C 0001                 19      move.b  #1,d1
+00001014  4E4F                      20      trap    #15             get address of 7-segment display
+00001016  2841                      21      move.l  d1,a4           A4 = Address of 7-segment display
+00001018  123C 0003                 22      move.b  #3,d1
+0000101C  4E4F                      23      trap    #15             get buttons address
+0000101E  2A41                      24      move.l  d1,a5           A5 = Buttons address
+00001020                            25      
+00001020                            26  
+00001020                            27  loop
+00001020  244C                      28      move.l  a4,a2
+00001022                            29      repeat
+00001022  0C15 0000                 30          cmp.b   #00,(a5)
+00001026  6700 001C                 31          beq     count_mode00
+0000102A  0C15 0001                 32          cmp.b   #01,(a5)
+0000102E  6700 003C                 33          beq     count_mode01       
+00001032  0C15 0002                 34          cmp.b   #02,(a5)
+00001036  6700 005C                 35          beq     count_mode10
+0000103A  0C15 0003                 36          cmp.b   #03,(a5)
+0000103E  6700 007C                 37          beq     count_mode11  
+00001042  60DC                      38          bra     loop
+00001044                            39          
+00001044  0C79 0063 000011C4        40  count_mode00:    cmpi.w  #99,last_count
+0000104C  6C00 00FA                 41                   bge     count_reset_00
+00001050  5279 000011C4             42                   addi.w  #0001, last_count
+00001056  2E39 000011C4             43                   move.l  last_count,d7
+0000105C  7010                      44                   move.l  #16,d0    
+0000105E  E0AF                      45                   lsr.l   d0,d7        
+00001060                            46m                  DELAY   10
+00001068  6100 007A                 47                   bsr     print
+0000106C                            48        
+0000106C  0C79 0000 000011C4        49  count_mode01:    cmpi.w  #00,last_count
+00001074  6F00 00E0                 50                   ble     count_reset_01
+00001078  5579 000011C4             51                   subi.w  #0002, last_count
+0000107E  2E39 000011C4             52                   move.l  last_count,d7
+00001084  7010                      53                   move.l  #16,d0    
+00001086  E0AF                      54                   lsr.l   d0,d7        
+00001088                            55m                  DELAY   10  
+00001090  6100 0052                 56                   bsr     print
+00001094                            57                  
+00001094  0C79 0063 000011C4        58  count_mode10:    cmpi.w  #99,last_count
+0000109C  6C00 00C6                 59                   bge     count_reset_10
+000010A0  5479 000011C4             60                   addi.w  #0002, last_count
+000010A6  2E39 000011C4             61                   move.l  last_count,d7
+000010AC  7010                      62                   move.l  #16,d0    
+000010AE  E0AF                      63                   lsr.l   d0,d7        
+000010B0                            64m                  DELAY   10 
+000010B8  6100 002A                 65                   bsr     print
+000010BC                            66                    
+000010BC  0C79 0000 000011C4        67  count_mode11:    cmpi.w  #00,last_count
+000010C4  6F00 00AC                 68                   ble     count_reset_11
+000010C8  5379 000011C4             69                   subi.w  #0001, last_count
+000010CE  2E39 000011C4             70                   move.l  last_count,d7
+000010D4  7010                      71                   move.l  #16,d0    
+000010D6  E0AF                      72                   lsr.l   d0,d7        
+000010D8                            73m                  DELAY   10 
+000010E0  6100 0002                 74                   bsr     print
+000010E4                            75  
+000010E4                            76  *Clear unnecessary display leds
+000010E4                            77  print:
+000010E4  163C 000A                 78      move.b  #10,d3              
+000010E8  6100 00A2                 79      bsr     segment7             
+000010EC  363C 000A                 80      move.w  #10,d3
+000010F0  6100 009A                 81      bsr     segment7           
+000010F4  163C 000A                 82      move.b  #10,d3               
+000010F8  6100 0092                 83      bsr     segment7             
+000010FC  163C 000A                 84      move.b  #10, d3
+00001100  6100 008A                 85      bsr     segment7
+00001104  163C 000A                 86      move.b  #10,d3
+00001108  C63C 000F                 87      and.b   #$F,d3              
+0000110C  6100 007E                 88      bsr     segment7
+00001110  163C 000A                 89      move.b  #10,d3              
+00001114  6100 0076                 90      bsr     segment7           
+00001118                            91  
+00001118                            92  * display digits
+00001118  33C7 000011C4             93      move.w  d7,last_count       save last count
+0000111E  3007                      94      move.w  d7,d0
+00001120  6100 0084                 95      bsr     Hex2BCD
+00001124  163C 0000                 96      move.b  #0,d3               0 digit code
+00001128                            97      if.b d0 <hi> #9 then.s
+0000112E  1600                      98          move.b  d0,d3
+00001130  E80B                      99          lsr.b   #4,d3           higher digit
+00001132                           100      endi
+00001132  6100 0058                101      bsr     segment7
+00001136  1600                     102      move.b  d0,d3
+00001138  C63C 000F                103      and.b   #$F,d3              lower digit
+0000113C  6100 004E                104      bsr     segment7
+00001140                           105  
+00001140  6000 FEDE                106      bra     loop                loop forever
+00001144                           107  
+00001144                           108      * Halt the Simulator
+00001144  FFFF FFFF                109      SIMHALT
+00001148                           110      
+00001148                           111  count_reset_00:
+00001148  33FC 0000 000011C4       112      move.w  #00, last_count
+00001150  6100 FEF2                113      bsr     count_mode00
+00001154  4E75                     114      rts
+00001156                           115  
+00001156                           116  count_reset_01:
+00001156  33FC 0063 000011C4       117      move.w  #99, last_count
+0000115E  6100 FF0C                118      bsr     count_mode01
+00001162  4E75                     119      rts
+00001164                           120      
+00001164                           121  count_reset_10:
+00001164  33FC 0000 000011C4       122      move.w  #00, last_count
+0000116C  6100 FF26                123      bsr     count_mode10
+00001170  4E75                     124      rts
+00001172                           125      
+00001172                           126  count_reset_11:
+00001172  33FC 0063 000011C4       127      move.w  #99, last_count
+0000117A  6100 FF40                128      bsr     count_mode11
+0000117E  4E75                     129      rts    
+00001180                           130  
+00001180                           131  
+00001180                           132  *-----------------------------------------------------------
+00001180                           133  *         A
+00001180                           134  *       -----
+00001180                           135  *     F|     |B
+00001180                           136  *      |  G  |
+00001180                           137  *       -----
+00001180                           138  *     E|     |C
+00001180                           139  *      |  D  |
+00001180                           140  *       -----   .H
+00001180                           141  *
+00001180                           142  * Bit Number  7 6 5 4 3 2 1 0
+00001180                           143  * Segment     H G F E D C B A
+00001180                           144  
+00001180                           145  * bit patterns to form digits on readout
+00001180                           146  digits:
+00001180= 3F                       147      dc.b  $3F           digit 0
+00001181= 06                       148      dc.b  $06           digit 1
+00001182= 5B                       149      dc.b  $5B           digit 2
+00001183= 4F                       150      dc.b  $4F           digit 3
+00001184= 66                       151      dc.b  $66           digit 4
+00001185= 6D                       152      dc.b  $6D           digit 5
+00001186= 7D                       153      dc.b  $7D           digit 6
+00001187= 07                       154      dc.b  $07           digit 7
+00001188= 7F                       155      dc.b  $7F           digit 8
+00001189= 6F                       156      dc.b  $6F           digit 9
+0000118A= 00                       157      dc.b  $00           digit off
+0000118B= 40                       158      dc.b  $40           dash
+0000118C                           159  
+0000118C                           160      ds.w  0             force word boundary
+0000118C                           161  
+0000118C                           162  *----------------------------------------------------------
+0000118C                           163  * Display a digit on the 7-segment display
+0000118C                           164  * Pre:  D3.B contains 1 digit to display
+0000118C                           165  *       A2 points to 7-segment LED to use
+0000118C                           166  * Post: A2 points to next 7-segment LED
+0000118C                           167  
+0000118C                           168  segment7:
+0000118C  48E7 1080                169      movem.l d3/a0,-(a7)     save registers
+00001190  41F8 1180                170      lea     digits,a0       bit pattern table
+00001194  C6BC 000000FF            171      and.l   #$00ff,d3
+0000119A  14B0 3000                172      move.b  (a0,d3),(a2)    display digit
+0000119E  548A                     173      adda.l  #2,a2
+000011A0  4CDF 0108                174      movem.l (a7)+,d3/a0     restore registers
+000011A4  4E75                     175      rts
+000011A6                           176  
+000011A6                           177  
+000011A6                           178  *-----------------------------------
+000011A6                           179  * Convert 2 digit Hex to 2 digit BCD
+000011A6                           180  * Pre:  D0.B 2 digit Hex
+000011A6                           181  * Post: D0.B 2 digit BCD
+000011A6                           182  Hex2BCD:
+000011A6  48E7 4000                183      movem.l d1,-(a7)        save registers
+000011AA  4241                     184      clr     d1
+000011AC  C0BC 000000FF            185      and.l   #$00FF,d0
+000011B2  80FC 000A                186      divu    #10,d0
+000011B6  2200                     187      move.l  d0,d1
+000011B8  E940                     188      asl.w   #4,d0           shift tens to proper location
+000011BA  4841                     189      swap    d1              put units in proper location
+000011BC  8001                     190      or.b    d1,d0           combine units with tens
+000011BE  4CDF 0002                191      movem.l (a7)+,d1        restore registers
+000011C2  4E75                     192      rts
+000011C4                           193  
+000011C4                           194  * variables
+000011C4                           195  last_count     ds.w    1
+000011C6                           196  
+000011C6                           197      END     START
+
+No errors detected
+No warnings generated
+
+
+SYMBOL TABLE INFORMATION
+Symbol-name         Value
+-------------------------
+COUNT_MODE00        1044
+COUNT_MODE01        106C
+COUNT_MODE10        1094
+COUNT_MODE11        10BC
+COUNT_RESET_00      1148
+COUNT_RESET_01      1156
+COUNT_RESET_10      1164
+COUNT_RESET_11      1172
+DELAY               0
+DIGITS              1180
+HEX2BCD             11A6
+LAST_COUNT          11C4
+LOOP                1020
+PRINT               10E4
+SEGMENT7            118C
+START               1000
+_00000000           1132
+_30000000           1022
